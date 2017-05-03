@@ -550,7 +550,7 @@ class scenario_two(object):
         #one big Goal Seek loop.
         #could numpy make this faster?
         #dynamic programming?
-        while tracker <200:
+        while tracker <2000:
             temp_muni_end = []
             temp_interest = [self.total_df.copy()['net_int'].ix[9]]
             temp_eq_end = []
