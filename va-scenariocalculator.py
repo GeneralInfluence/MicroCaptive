@@ -156,12 +156,7 @@ class scenario_one(object):
                 equity_div.append(dividends)
                 inv_year.append(start_year)
                 
-        #Portfolio at start of year 10, right before distributions
-        div_int_year10 = muni_interest[9]+ equity_div[9]
-        portfolio_year10 = muni_ending[9]+equity_ending[9]+div_int_year10
-        distribution = portfolio_year10/8
-        
-        
+       
         #bases needs to show the bases for each year.
         #bases would be 260K in year 0, 260K + 260K + last year's int in year 1, 
         self.total_df = pd.DataFrame([inv_year,muni_bases, muni_ending, muni_cap_appr, muni_interest, equity_bases, equity_ending, equity_cap_appr, equity_div]).T.rename(columns = {0: 'Starting Year', 1:'muni_cost', 2:'muni_end_amt', 3: 'muni_capgain', 4:'net_int', 5: 'equity_cost', 6: 'equity_end_amt', 7: 'equity_cap_gain', 8:'net_div'}).set_index('Starting Year')
@@ -183,7 +178,7 @@ class scenario_one(object):
         balance of the municipal bond portfolio if the equity is fully exhausted
         before then.
         """
-        capgain_adjuster = 1-(20+3.8+5.75)/100
+        capgain_adjuster = 1-(20)/100
         #Starting dist
         distribution = (port_df.copy()['equity_end_amt'].ix[9]+port_df.copy()['muni_end_amt'].ix[9]+port_df.copy()['net_int'].ix[9]+port_df.copy()['net_div'].ix[9])/years_dist
         
@@ -325,6 +320,164 @@ class scenario_one(object):
 #                self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_muni_end-temp_muni_bases, temp_muni_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_eq_end-temp_eq_bases, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4: 'muni_capgain', 5:'net_int', 6: 'eq_start', 7: 'equity_cost', 8: 'equity_end_amt', 9: 'equity_cap_gain', 10:'net_div'}).set_index('Starting Year')
 #                break
         return self.dist_df
+
+
+class scenario_two(object):
+    def __init__(self, initial_amount=950000, reserve_fund = 190000, muni_roi = 1/100, equity_roi = 5/100, muni_int = 3/100, equity_div = 3/100, proportion = 50):
+        """
+        Scenario Two calculates returns with assumptions about investments made,
+        taxes, and distributions.
+        
+        $1MM in premiums are paid each year, but for simplicity, we assume
+        that $950k are the net premiums ($50k in expenses deducted per year.)
+        Could make adjustable later if we know if and how expenses vary with
+        premiums paid.
+        
+        Premiums are not taxed. Dividends and Interest are taxed at corporate rates.
+        
+        For each year, you know how many years are left for appreciation before distribution.
+        
+        Proportion is the proportion of the portfolio dedicated to Munis.
+        So Equity Investments are 1-proportion/100
+        """
+        self.initial_amount = initial_amount
+        self.muni_roi = muni_roi
+        self.equity_roi = equity_roi
+        self.muni_int = muni_int
+        self.equity_div = equity_div
+        self.reserve_fund = reserve_fund
+        self.muni_yr1 = round((self.initial_amount-self.reserve_fund)*(proportion/100),2)
+        self.eq_yr1 = round((self.initial_amount-self.reserve_fund)*(1-proportion/100),2)
+        #For years 2-10.
+        self.muni_amt = round(self.initial_amount*(proportion/100),2)
+        self.equity_amt = round(self.initial_amount*(1-proportion/100),2)
+        
+    def investment_calc(self, investment):
+        """
+        Calculate the returns in a year, municipal and equity.
+        
+        Investment is a list with the muni and equity amounts to invest passed
+        [self.muni_amt, self.equity_amt].
+        
+        The principal, muni_amount, appreciates at 1% per annum, untaxed.
+        The interest earned, at 3% per annum, is only taxed at state income levels.
+        This is automatically reinvested into munis.
+        
+        So each year, you have two buckets - the principal, and the interest earned, to track.
+        
+        For equities, we are tracking the portfolio, appreciating at 5% per annum,
+        and dividends at 3% per annum.
+        
+        Corporate Tax Rate for 831b is here: https://www.irs.gov/pub/irs-pdf/i1120pc.pdf
+  
+        
+        """
+        
+        
+        #muni basis each year is the muni_amount + all prior year's interest
+        self.muni_appreciated = round(investment[0] * (1+self.muni_roi),2)
+        self.equity_appreciated = round(investment[1] * (1+self.equity_roi),2)
+        
+        #Interest and Dividends, pretax
+        self.pretax_interest = round(investment[0]*self.muni_int,2)
+        self.pretax_dividends = round(investment[1]*self.equity_div,2)
+        
+        muni_percent = self.pretax_interest/(self.pretax_interest+self.pretax_dividends)
+        
+        #Corp Tax Schedule
+        if self.pretax_dividends+self.pretax_interest <= 50000:
+            self.muni_int_earned = round(self.pretax_interest*(1-15/100),2)
+            self.equity_div_earned = round(self.pretax_dividends*(1-15/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 50000) & (self.pretax_dividends+self.pretax_interest <= 75000):
+            #Will split the amount proportionally.
+            self.muni_int_earned = round((self.pretax_interest-(7500*muni_percent))*(1-25/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(7500*(1-muni_percent)))*(1-25/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 75000) & (self.pretax_dividends+self.pretax_interest <= 100000):
+            self.muni_int_earned = round((self.pretax_interest-(13750*muni_percent))*(1-34/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(13750*(1-muni_percent)))*(1-34/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 100000) & (self.pretax_dividends+self.pretax_interest <= 335000):
+            self.muni_int_earned = round((self.pretax_interest-(22250*muni_percent))*(1-39/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(22250*(1-muni_percent)))*(1-39/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 335000) & (self.pretax_dividends+self.pretax_interest <= 10000000):
+            self.muni_int_earned = round((self.pretax_interest-(113900*muni_percent))*(1-34/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(113900*(1-muni_percent)))*(1-34/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 10000000) & (self.pretax_dividends+self.pretax_interest <= 15000000):
+            self.muni_int_earned = round((self.pretax_interest-(3400000*muni_percent))*(1-35/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(3400000*(1-muni_percent)))*(1-35/100),2)
+        elif (self.pretax_dividends+self.pretax_interest > 15000000) & (self.pretax_dividends+self.pretax_interest <= 18333333):
+            self.muni_int_earned = round((self.pretax_interest-(5150000*muni_percent))*(1-38/100),2)
+            self.equity_div_earned = round((self.pretax_dividends-(5150000*(1-muni_percent)))*(1-38/100),2)
+        
+        else:
+            self.muni_int_earned = round(self.pretax_interest*(1-35/100),2)
+            self.equity_div_earned = round(self.pretax_dividends*(1-35/100),2)
+        return (self.muni_appreciated, self.muni_int_earned, self.equity_appreciated, self.equity_div_earned)
+    
+    
+        
+    
+    def total_returns(self, years_inv = 10):
+        #first calculate what your returns are over the investment only period.
+        """
+        Calculate investment returns over ten years, and then distributions
+        over ten years.
+        
+        Investments continue to compound as distributions are taken.
+        
+        The ending distribution amount should clear the investment amounts.
+        
+        Dividends and interest are not re-taxed.
+        
+        Cap gains are taxed at 20% + 3.8% ACA tax + 5.75% VA state tax rate.
+        """
+        reserve = []
+        muni_bases = []
+        muni_ending = []
+        muni_cap_appr = []
+        muni_interest = []
+        equity_bases = []
+        equity_ending = []
+        equity_cap_appr = []
+        equity_div = []
+        inv_year = []
+        for start_year in range(0, years_inv):
+            if start_year == 0:
+                reserve.append(round(self.reserve_fund*1.01,2))
+                ending_muni, interest, ending_equity, dividends = self.investment_calc([self.muni_yr1,self.eq_yr1])
+                #munis
+                muni_bases.append(self.muni_yr1)
+                muni_ending.append(ending_muni)
+                muni_cap_appr.append(ending_muni - self.muni_yr1)
+                muni_interest.append(interest)
+                #equities
+                equity_bases.append(self.eq_yr1)
+                equity_ending.append(ending_equity)
+                equity_cap_appr.append(ending_equity-self.eq_yr1)
+                equity_div.append(dividends)
+                inv_year.append(start_year)
+            else:
+                #compounding the ending amount from the prior year plus the interest earned in the last year
+                reserve.append(round(reserve.copy()[-1]*1.01,2))
+                ending_muni, interest, ending_equity, dividends = self.investment_calc([muni_ending[start_year-1]+muni_interest[start_year-1]+self.muni_amt,equity_ending[start_year-1]+ equity_div[start_year-1]+self.equity_amt])
+                muni_bases.append(self.muni_yr1 + self.muni_amt*(start_year) + sum(muni_interest.copy()))
+                muni_ending.append(ending_muni)
+                muni_cap_appr.append(ending_muni - muni_bases.copy()[start_year])
+                muni_interest.append(interest)
+                #equities
+                equity_bases.append(self.eq_yr1 + self.equity_amt*(start_year) + sum(equity_div.copy()))
+                equity_ending.append(ending_equity)
+                equity_cap_appr.append(ending_equity-equity_bases.copy()[start_year])
+                equity_div.append(dividends)
+                inv_year.append(start_year)
+                
+       
+        #bases needs to show the bases for each year.
+        #bases would be 260K in year 0, 260K + 260K + last year's int in year 1, 
+        self.total_df = pd.DataFrame([inv_year,reserve, muni_bases, muni_ending, muni_cap_appr, muni_interest, equity_bases, equity_ending, equity_cap_appr, equity_div]).T.rename(columns = {0: 'Starting Year', 1:'reserve', 2:'muni_cost', 3:'muni_end_amt', 4: 'muni_capgain', 5:'net_int', 6: 'equity_cost', 7: 'equity_end_amt', 8: 'equity_cap_gain', 9:'net_div'}).set_index('Starting Year')
+        return self.total_df
+        #return (muni_bases, muni_ending, muni_cap_appr, muni_interest)
+        
+
 
    
         
