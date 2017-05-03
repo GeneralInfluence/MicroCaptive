@@ -36,7 +36,7 @@ import numpy as np
 #%matplotlib inline
 
 class scenario_one(object):
-    def __init__(self, initial_amount, muni_roi = 1/100, equity_roi = 5/100, muni_int = 3/100, equity_div = 3/100, proportion = 50):
+    def __init__(self, initial_amount=1000000, muni_roi = 1/100, equity_roi = 5/100, muni_int = 3/100, equity_div = 3/100, proportion = 50):
         """
         Scenario One calculates returns with assumptions about investments made,
         taxes, and distributions.
@@ -160,10 +160,12 @@ class scenario_one(object):
         #bases needs to show the bases for each year.
         #bases would be 260K in year 0, 260K + 260K + last year's int in year 1, 
         self.total_df = pd.DataFrame([inv_year,muni_bases, muni_ending, muni_cap_appr, muni_interest, equity_bases, equity_ending, equity_cap_appr, equity_div]).T.rename(columns = {0: 'Starting Year', 1:'muni_cost', 2:'muni_end_amt', 3: 'muni_capgain', 4:'net_int', 5: 'equity_cost', 6: 'equity_end_amt', 7: 'equity_cap_gain', 8:'net_div'}).set_index('Starting Year')
+        
         return self.total_df
+        
         #return (muni_bases, muni_ending, muni_cap_appr, muni_interest)
         
-    def distributions(self, port_df, years_dist = 10):
+    def distributions(self, port_df, years_dist = 10, distribution = 0):
         """
         Calculating overall distribution necessary to exhaust portfolio.
         
@@ -180,11 +182,15 @@ class scenario_one(object):
         """
         capgain_adjuster = 1-(20)/100
         #Starting dist
-        distribution = (port_df.copy()['equity_end_amt'].ix[9]+port_df.copy()['muni_end_amt'].ix[9]+port_df.copy()['net_int'].ix[9]+port_df.copy()['net_div'].ix[9])/years_dist
+        if distribution == 0:
+            distribution = (port_df.copy()['equity_end_amt'].ix[9]+port_df.copy()['muni_end_amt'].ix[9]+port_df.copy()['net_int'].ix[9]+port_df.copy()['net_div'].ix[9])/(years_dist-2)
         
         tracker = 0
         
-        while tracker ==0:
+        #one big Goal Seek loop.
+        #could numpy make this faster?
+        #dynamic programming?
+        while tracker <2000:
             temp_muni_end = []
             temp_interest = [port_df.copy()['net_int'].ix[9]]
             temp_eq_end = []
@@ -194,7 +200,8 @@ class scenario_one(object):
             temp_muni_bases = [port_df.copy()['muni_cost'].ix[9]]
             temp_eq_bases = [port_df.copy()['equity_cost'].ix[9]]
             dists = []
-            
+            tax_list = []
+            dist_nondiv = []
                 
             #counter is the start of the year. So year 10 in count is when everything should be done at start of year.
             for dist_year in range(0, years_dist):
@@ -207,7 +214,10 @@ class scenario_one(object):
 #                print ("adj for cap gain", nondivint_amount/capgain_adjuster)
                 eq_after_dist = 0
                 remain_dist_needed = 0
-                muni_after = 0
+                muni_after = temp_muni_start[-1]
+                dists.append(distribution)
+                dist_nondiv.append(nondivint_amount)
+                taxes = 0
                 
                 #Exhaust equity first
                 if temp_eq_start[dist_year]>0:
@@ -217,28 +227,38 @@ class scenario_one(object):
                         eq_after_dist = temp_eq_start[dist_year]-nondivint_amount/capgain_adjuster
                         eq_base = temp_eq_bases[dist_year]
                         temp_eq_bases.append(eq_base)
-                        
+                        temp_muni_bases.append(temp_muni_bases.copy()[-1])
+                        taxes+=nondivint_amount/capgain_adjuster-nondivint_amount
                     #Checking if nondivint_amount > cap gains.
                     elif ((temp_eq_start[dist_year]-temp_eq_bases[dist_year])> 0) & ((temp_eq_start[dist_year]-temp_eq_bases[dist_year]) < nondivint_amount/capgain_adjuster):
                         #if cap gains exist but less than amount to distribute, fully exhaust cap gains
                         dist_from_gains = temp_eq_start[dist_year]-temp_eq_bases[dist_year]
                         #net gains after tax
                         net_dist_from_gains = dist_from_gains*capgain_adjuster
+                        taxes+=dist_from_gains-net_dist_from_gains
                         remain_dist_needed = nondivint_amount - net_dist_from_gains
                         
-                        #this allows eq after dist to go negative. can't allow.
-                        eq_after_dist = temp_eq_start[dist_year]-dist_from_gains-remain_dist_needed
+                        
+                        
+                        if temp_eq_start[dist_year]-dist_from_gains >= remain_dist_needed:
+                            eq_after_dist = temp_eq_start[dist_year]-dist_from_gains - remain_dist_needed
+                            remain_dist_needed = 0
+                            temp_muni_bases.append(temp_muni_bases.copy()[-1])
+                        else:
+                            eq_after_dist = 0
+                            remain_dist_needed = abs(temp_eq_start[dist_year]-dist_from_gains - remain_dist_needed)
                         eq_base = eq_after_dist
                         temp_eq_bases.append(eq_base)
-                        remain_dist_needed = 0
-                    elif ((temp_eq_start[dist_year]-temp_eq_bases[dist_year])<= 0) & (temp_eq_start[dist_year] >= nondivint_amount):
+                        
+                    elif ((temp_eq_start[dist_year]-temp_eq_bases[dist_year])== 0) & (temp_eq_start[dist_year] >= nondivint_amount):
                         #No cap gains to take out - just base.
                         eq_after_dist = temp_eq_start[dist_year]-nondivint_amount
                         temp_eq_bases.append(eq_after_dist)
-                    elif ((temp_eq_start[dist_year]-temp_eq_bases[dist_year])<= 0) & (temp_eq_start[dist_year] < nondivint_amount):
+                        temp_muni_bases.append(temp_muni_bases.copy()[-1])
+                    elif ((temp_eq_start[dist_year]-temp_eq_bases[dist_year])== 0) & (temp_eq_start[dist_year] < nondivint_amount):
                         #exhaust the equity portfolio.
                         eq_after_dist = 0
-                        remain_dist_needed = nonintdiv_amount - temp_eq_start[dist_year]
+                        remain_dist_needed = nondivint_amount - temp_eq_start[dist_year]
                         temp_eq_bases.append(eq_after_dist)
                 
                 #goal of this is to exhaust the munis AFTER equities fully distributed.
@@ -249,6 +269,7 @@ class scenario_one(object):
                         muni_after = temp_muni_start[dist_year] - remain_dist_needed/capgain_adjuster
                         muni_base = temp_muni_bases[dist_year]
                         temp_muni_bases.append(muni_base)
+                        taxes+=remain_dist_needed/capgain_adjuster-remain_dist_needed
                     #if cap gains < remaining amount to dist
                     elif (temp_muni_start[dist_year]-temp_muni_bases[dist_year]) < remain_dist_needed/capgain_adjuster:
                         dist_from_gains = temp_muni_start[dist_year]-temp_muni_bases[dist_year]
@@ -256,16 +277,17 @@ class scenario_one(object):
                         remain_dist_needed = remain_dist_needed-net_dist_from_gains
                         muni_after = temp_muni_start[dist_year]-dist_from_gains-remain_dist_needed
                         temp_muni_bases.append(muni_after)
+                        taxes+=dist_from_gains-net_dist_from_gains
                         
                 #If equities fully distributed and remain_dist_needed = 0
-                if (temp_muni_start[dist_year] > 0) & (remain_dist_needed ==0):
+                if (temp_eq_start[dist_year] == 0) & (remain_dist_needed ==0):
                     #Check if nondivint_amount exhausts cap gains.
                     if (temp_muni_start[dist_year]-temp_muni_bases[dist_year])>= nondivint_amount/capgain_adjuster:
                         #Take out from the starting amount the dist.
                         muni_after = temp_muni_start[dist_year]-nondivint_amount/capgain_adjuster
                         muni_base = temp_muni_bases[dist_year]
                         temp_muni_bases.append(muni_base)
-                        
+                        taxes+=nondivint_amount/capgain_adjuster-nondivint_amount
                     #Checking if nondivint_amount > cap gains.
                     elif ((temp_muni_start[dist_year]-temp_muni_bases[dist_year])> 0) & ((temp_muni_start[dist_year]-temp_muni_bases[dist_year]) < nondivint_amount/capgain_adjuster):
                         #if cap gains exist but less than amount to distribute, fully exhaust cap gains
@@ -276,18 +298,18 @@ class scenario_one(object):
                         muni_after = temp_muni_start[dist_year]-dist_from_gains-remain_dist_needed
                         temp_muni_bases.append(muni_after)
                         remain_dist_needed = 0
-                        
-                    elif ((temp_muni_start[dist_year]-temp_muni_bases[dist_year])<= 0) & (temp_muni_start[dist_year] >= nondivint_amount):
+                        taxes+=dist_from_gains-net_dist_from_gains
+                    elif ((temp_muni_start[dist_year]-temp_muni_bases[dist_year])== 0) & (temp_muni_start[dist_year] >= nondivint_amount):
                         #No cap gains to take out - just base.
                         muni_after = temp_muni_start[dist_year]-nondivint_amount
                         temp_muni_bases.append(muni_after)
-                    elif ((temp_muni_start[dist_year]-temp_muni_bases[dist_year])<= 0) & (temp_muni_start[dist_year] < nondivint_amount):
+                    elif ((temp_muni_start[dist_year]-temp_muni_bases[dist_year])== 0) & (temp_muni_start[dist_year] < nondivint_amount):
                         #exhaust the muni portfolio.
                         muni_after = 0
                         temp_muni_bases.append(muni_after)
                             
                 #distributions taken.
-                
+                tax_list.append(taxes)
                 
                 #now compound the muni and equity after dists
                 ending_muni, interest, ending_equity, dividends = self.investment_calc([muni_after, eq_after_dist])
@@ -295,6 +317,7 @@ class scenario_one(object):
                 temp_muni_end.append(ending_muni)
                 #muni start for next year is this year's ending value
                 temp_muni_start.append(ending_muni)
+                
                 temp_interest.append(interest)
                 temp_eq_end.append(ending_equity)
                 #equity start for next year is this year's ending value
@@ -303,23 +326,37 @@ class scenario_one(object):
                 
             #distribution+=1
             inv_year = list(range(10,21))
-            self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
-            tracker += 1
+            dists.append(distribution)
+            nondivint_amount = distribution - temp_interest[-1]-temp_div[-1]
+            dist_nondiv.append(nondivint_amount)
+            #self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
+            #self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+            
             
             #if dist > ending amount, and continues to increase, want to stop!!!
-            
-#            if round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) > 0:
-#                distribution -= 100
-#            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) < 0:
-#                distribution += 100
-#            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) == 0:
-#            #if round(distribution - temp_muni_start[-1] - temp_interest[-1],0) == 0:
+            #Part of the Goal Seek logic.
+            if round(distribution - temp_muni_start[-1] - temp_interest[-1],1) > 0:
+                distribution -= .01
+                tracker+=1
+                self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
+                self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+                
+            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],1) < 0:
+                distribution += .01
+                tracker+=1
+                self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
+                self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+                
+            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],1) == 0:
+                #if round(distribution - temp_muni_start[-1] - temp_interest[-1],0) == 0:
 #                inv_year = list(range(10,21))
-#                print ("Distribution Amount per year:", distribution)
-#                print ("Ending Amount", temp_muni_start[-1] - temp_interest[-1])
-#                self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_muni_end-temp_muni_bases, temp_muni_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_eq_end-temp_eq_bases, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4: 'muni_capgain', 5:'net_int', 6: 'eq_start', 7: 'equity_cost', 8: 'equity_end_amt', 9: 'equity_cap_gain', 10:'net_div'}).set_index('Starting Year')
-#                break
-        return self.dist_df
+                print ("Distribution Amount per year:", distribution)
+                print ("Ending Amount:", temp_muni_start[-1] + temp_interest[-1])
+                print ("Loops:", tracker)
+                self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
+                self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+                break
+        return (self.dist_df, self.dist_info)
 
 
 class scenario_two(object):
