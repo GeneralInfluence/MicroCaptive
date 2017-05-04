@@ -13,6 +13,8 @@ If you want to run the script in Spyder, Atom or something else and not automati
 
 In that case, to get the information you want for a scenario, do the below when in a IDE:
 
+0) Import the scenario classes:
+from va_scenariocalculator import scenario_one, scenario_two
 1) Create a client (if you want to toggle the initial amount, then do initial_amount = your_number):
 i.e. clientx = scenario_one()
 2) Call the total_returns() method:
