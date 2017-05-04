@@ -343,18 +343,18 @@ class scenario_one(object):
             net_dist_from_gains = dist_from_gains*capgain_adjuster
             dist_nondiv.append(nondivint_amount)
             tax_list.append(dist_from_gains-net_dist_from_gains)
-            
+            tracker+=1
             #if dist > ending amount, and continues to increase, want to stop!!!
             #Part of the Goal Seek logic.
             if round(distribution - temp_muni_start[-1] - temp_interest[-1],1) > 0:
                 distribution -= .01
-                tracker+=1
+                
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
                 
             elif round(distribution - temp_muni_start[-1] - temp_interest[-1],1) < 0:
                 distribution += .01
-                tracker+=1
+                
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
                 
@@ -547,10 +547,12 @@ class scenario_two(object):
         
         tracker = 0
         
+        
         #one big Goal Seek loop.
         #could numpy make this faster?
         #dynamic programming?
-        while tracker <2000:
+        while tracker <10000:
+            print (tracker)
             temp_muni_end = []
             temp_interest = [self.total_df.copy()['net_int'].ix[9]]
             temp_eq_end = []
@@ -704,22 +706,22 @@ class scenario_two(object):
             #self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
             #self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
             
-            
+            tracker+=1
             #if dist > ending amount, and continues to increase, want to stop!!!
             #Part of the Goal Seek logic.
-            if round(distribution - temp_muni_start[-1] - temp_interest[-1],-4) > 0:
+            if round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) > 0:
                 distribution -= 100
-                tracker+=1
+                
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
                 
-            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],-4) < 0:
+            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) < 0:
                 distribution += 100
-                tracker+=1
+                
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
                 
-            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],1) == 0:
+            elif round(distribution - temp_muni_start[-1] - temp_interest[-1],-3) == 0:
                 #if round(distribution - temp_muni_start[-1] - temp_interest[-1],0) == 0:
 #                inv_year = list(range(10,21))
                 print ("Distribution Amount per year:", distribution)
