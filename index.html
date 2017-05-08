@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Captive Insurance Viz</title>
+<style>
+button {
+  position: relative;
+  left: 10px;
+  top: 10px;
+}
+</style>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+
+<div style="margin-left: 45px">
+  <h1>Captive Insurance saves $5.24MM from Taxes</h1>
+</div>
+<div>
+
+  <div class='row'>
+      <div class='col-md-6'>
+        <button onclick="transition()">Update</button>
+      </div>
+      <div class='col-md-6'>
+          <h2 id="scenario">Scenario 1</h2>
+      </div>
+  </div>
+
+</div>
+<div id="chart">
+</div>
+
+<script>
+var width="960",
+    height="500",
+    margin = {top: 20, right: 20, bottom: 50, left: 70}
+    state = 1;
+var svg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+var layers0, layers1, layers;
+var z = d3.interpolateCool;
+function stackMax(layer) {
+    return d3.max(layer, function (d) {
+        return d[1];
+    });
+}
+function stackMin(layer) {
+    return d3.min(layer, function (d) {
+        return d[0];
+    });
+}
+var area;
+function transition() {
+  var t;
+  d3.selectAll("path")
+      .data((t = layers1, layers1 = layers0, layers0 = t))
+      .transition()
+      .duration(2000)
+      .attr("d", area);
+  if (state==1) {state=2}
+  else if (state==2) {state=1};
+  var text = "Scenario " + String(state);
+  d3.select("#scenario").text(text);
+}
+function format(distributions) {
+  var dist_keys = distributions['columns'],
+      ignore_keys = ["Starting Year"];
+  var dist_arrays = [],
+      count = -1;
+  for (i=0; i<dist_keys.length; i++) {
+      if (ignore_keys.indexOf(dist_keys[i]) == -1) {
+          count +=1;
+          var layer = []
+          for (t = 0; t < distributions.length; t++) {
+              var val = parseFloat(distributions[t][dist_keys[i]]);
+              layer[t] = isNaN(val) ? 0 : val;
+          }
+          dist_arrays[count] = layer;
+      }
+  }
+  return dist_arrays
+}
+queue()
+    .defer(d3.csv, "scenario1_totalassets.csv")
+    .defer(d3.csv, "scenario2_totalassets.csv")
+//    .defer(d3.csv, "scenarios_income.csv")
+    .await(ready);
+function draw() {
+  var m = layers0[0].length,
+      n = layers0.length;
+//  var n = 20, // number of layers
+//      m = 200, // number of samples per layer
+//      k = 10; // number of bumps per layer
+//
+//  var stack = d3.stack().keys(d3.range(n)).offset(d3.stackOffsetWiggle),
+//      layers0 = stack(d3.transpose(d3.range(n).map(function() { return bumps(m, k); }))),
+//      layers1 = stack(d3.transpose(d3.range(n).map(function() { return bumps(m, k); })));
+  layers = layers0.concat(layers1);
+  var ymin = d3.min(layers, stackMin),
+      ymax = d3.max(layers, stackMax),
+      yrange = ymax - ymin;
+  var x = d3.scaleLinear()
+      .domain([0, m - 1])
+      .range([0, width]);
+  var y = d3.scaleLinear()
+      .domain([ymin, ymax])
+      .range([height, 0]);
+  area = d3.area()
+      .x(function(d, i) { return x(i); })
+      .y0(function(d) { return y(d[0]); })
+      .y1(function(d) { return y(d[1]); });
+  svg.append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+  svg.selectAll("path")
+      .data(layers0)
+      .enter().append("path")
+      .attr("d", area)
+      .attr("fill", function (d,i) {
+          console.log(i);
+          return z(0.7+(i/(2*n)));
+      });
+  svg.append('g')
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+  svg.append("text")
+      .attr("transform",
+            "translate(" + (width/2) + " ," +
+                           (height - 20) + ")")
+      .style("text-anchor", "middle")
+      .text("Year");
+  svg.append("g")
+      .call(d3.axisLeft(y));
+  // text label for the y axis
+  svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0 + margin.left/3)
+      .attr("x",0 - (height / 2))
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .text("Portfolio Size ($$$)");
+}
+function ready(error,distributions,total) {
+  if (error) throw error;
+  layers0 = format(distributions);
+  layers1 = format(total);
+  var n = layers0.length
+  var stack = d3.stack().keys(d3.range(n)).offset(d3.stackOffsetNone);
+  layers0 = stack(d3.transpose(layers0));
+  layers1 = stack(d3.transpose(layers1));
+//  layers = layers0.concat(layers1);
+  draw();
+}
+</script>
