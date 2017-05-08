@@ -84,8 +84,8 @@ function format(distributions) {
 
 queue()
     .defer(d3.csv, "scenario1_totalassets.csv")
-//    .defer(d3.csv, "scenario2_totalassets.csv")
-    .defer(d3.csv, "scenarios_income.csv")
+    .defer(d3.csv, "scenario2_totalassets.csv")
+//    .defer(d3.csv, "scenarios_income.csv")
     .await(ready);
 
 var layers0, layers1, layers;
