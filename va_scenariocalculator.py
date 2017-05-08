@@ -971,6 +971,26 @@ class scenario_two(object):
                 break
         return (distribution, self.dist_df, self.dist_info)
 
+def combine_csvs(df_first10, df_dists):
+    df_combined = pd.concat([df_first10, df_dists])
+    #Fix Starting Equity Port Value
+    df_combined.set_value(0, 'eq_start', df_combined.equity_cost[0])
+    df_combined.set_value(0, 'muni_start', df_combined.muni_cost[0])
+    for i in range(0,9):
+        df_combined.set_value(i+1, 'eq_start', df_combined.equity_end_amt[i])
+        df_combined.set_value(i+1, 'muni_start', df_combined.muni_end_amt[i])
+    
+    #Fix Cap Gain
+    for i in range(10, 20):
+        df_combined.set_value(i, 'equity_cap_gain', df_combined.eq_start[i]-df_combined.equity_cost[i])
+        df_combined.set_value(i, 'muni_capgain', df_combined.muni_start[i]-df_combined.muni_cost[i])
+        
+    #Fill NA with 0.
+    df_combined = df_combined.fillna(0)
+    return df_combined
+
+
+    
    
 if __name__ == "__main__":
     #run scenario one
@@ -979,7 +999,9 @@ if __name__ == "__main__":
     df_client1_first10.to_csv('first 10 years portfolio client1.csv')
     df1_dist, df1_info = client1.distributions()
     df1_dist.to_csv('client1_dists.csv')
-    df1_info.to_csv('client1_info.csv')
+    df1_info.to_csv('scenario1_distributions.csv')
+    df_returns = combine_csvs(df_client1_first10, df1_dist)
+    df_returns.to_csv('scenario1_totalreturns.csv')
     
      #run scenario two
     client2 = scenario_two()
@@ -987,5 +1009,8 @@ if __name__ == "__main__":
     df_client2_first10.to_csv('first 10 years portfolio client2.csv')
     df2_dist, df2_info = client2.distributions()
     df2_dist.to_csv('client2_dists.csv')
-    df2_info.to_csv('client2_info.csv')
+    df2_info.to_csv('scenario2_distributions.csv')
+    df_returns2 = combine_csvs(df_client2_first10, df2_dist)
+    df_returns2.to_csv('scenario2_totalreturns.csv')
+    
     
