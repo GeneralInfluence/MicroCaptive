@@ -1028,7 +1028,7 @@ if __name__ == "__main__":
     df1_info.to_csv('scenario1_distributions.csv')
     df_returns = combine_csvs(df_client1_first10, df1_dist)
     df_returns.to_csv('scenario1_totalreturns_all.csv', index_label = 'Starting Year')
-    tot_assets = df_returns['total_assets']
+    tot_assets = pd.DataFrame(df_returns['total_assets']) 
     tot_assets.to_csv('scenario1_totalassets.csv', index_label = 'Starting Year')
     
      #run scenario two
@@ -1040,7 +1040,7 @@ if __name__ == "__main__":
     df2_info.to_csv('scenario2_distributions.csv')
     df_returns2 = combine_csvs(df_client2_first10, df2_dist)
     df_returns2.to_csv('scenario2_totalreturns_all.csv', index_label = 'Starting Year')
-    tot_assets2 = df_returns2['total_assets']
+    tot_assets2 = pd.DataFrame(df_returns2['total_assets'])
     tot_assets2.to_csv('scenario2_totalassets.csv', index_label = 'Starting Year')
     
     
