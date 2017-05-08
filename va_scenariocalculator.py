@@ -1023,7 +1023,8 @@ if __name__ == "__main__":
     df1_dist.to_csv('client1_dists.csv')
     df1_info.to_csv('scenario1_distributions.csv')
     df_returns = combine_csvs(df_client1_first10, df1_dist)
-    df_returns.to_csv('scenario1_totalreturns.csv')
+    df_returns.to_csv('scenario1_totalreturns_all.csv')
+    df_returns['total_assets'].to_csv('scenario1_totalassets.csv')
     
      #run scenario two
     client2 = scenario_two()
@@ -1033,7 +1034,9 @@ if __name__ == "__main__":
     df2_dist.to_csv('client2_dists.csv')
     df2_info.to_csv('scenario2_distributions.csv')
     df_returns2 = combine_csvs(df_client2_first10, df2_dist)
-    df_returns2.to_csv('scenario2_totalreturns.csv')
+    df_returns2.to_csv('scenario2_totalreturns_all.csv')
+    df_returns2['total_assets'].to_csv('scenario2_totalassets.csv')
+    
     
     #Get After Tax Income for two scenarios
     after_tax = after_tax_compare(df1_info, df2_info)
