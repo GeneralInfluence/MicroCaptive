@@ -550,13 +550,13 @@ class scenario_one(object):
                 
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
             elif round(distribution - temp_muni_start[-1] - temp_interest[-1],rounder) < 0:
                 distribution += increment
                 
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
             elif round(distribution - temp_muni_start[-1] - temp_interest[-1],rounder) == 0:
                 #if round(distribution - temp_muni_start[-1] - temp_interest[-1],0) == 0:
 #                inv_year = list(range(10,21))
@@ -565,6 +565,7 @@ class scenario_one(object):
                 print ("Loops:", tracker)
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
                 #converge = True
                 break
             
@@ -576,7 +577,7 @@ class scenario_one(object):
                 print ("Try re-running with a different starting distribution.")
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
                 break
         return (distribution, self.dist_df, self.dist_info)
 
@@ -941,13 +942,13 @@ class scenario_two(object):
                 
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
             elif round(distribution - temp_muni_start[-1] - temp_interest[-1],rounder) < 0:
                 distribution += increment
                 
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
             elif round(distribution - temp_muni_start[-1] - temp_interest[-1],rounder) == 0:
                 #if round(distribution - temp_muni_start[-1] - temp_interest[-1],0) == 0:
 #                inv_year = list(range(10,21))
@@ -956,6 +957,7 @@ class scenario_two(object):
                 print ("Loops:", tracker)
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
                 #converge = True
                 break
             
@@ -967,7 +969,7 @@ class scenario_two(object):
                 print ("Try re-running with a different starting distribution.")
                 self.dist_df = pd.DataFrame([inv_year,temp_muni_start, temp_muni_bases, temp_muni_end, temp_interest, temp_eq_start, temp_eq_bases, temp_eq_end, temp_div ]).T.rename(columns = {0: 'Starting Year', 1: 'muni_start', 2:'muni_cost', 3:'muni_end_amt', 4:'net_int', 5: 'eq_start', 6: 'equity_cost', 7: 'equity_end_amt', 8:'net_div'}).set_index('Starting Year')
                 self.dist_info = pd.DataFrame([inv_year, dists, dist_nondiv, tax_list]).T.rename(columns = {0:'Starting Year', 1:'dists', 2:'nondivint_dists', 3: 'capgains_paid'}).set_index('Starting Year')
-                
+                self.dist_info = self.dist_info.assign(after_tax_income = self.dist_info.dists - self.dist_info.capgains_paid)
                 break
         return (distribution, self.dist_df, self.dist_info)
 
@@ -987,8 +989,28 @@ def combine_csvs(df_first10, df_dists):
         
     #Fill NA with 0.
     df_combined = df_combined.fillna(0)
+    
+    #Create Total Assets column
+    df_combined = df_combined.assign(total_assets = df_combined.equity_end_amt + df_combined.muni_end_amt)
+    
+    #Set index to 1 to 21.
+    df_combined.set_index([list(range(1,22))], inplace = True)
     return df_combined
 
+def after_tax_compare(info1, info2):
+    """Combines the distribution info dfs from Scen 1 and 2,
+    gets the sum of the After Tax Incomes, and Difference.
+    """
+    after_tax = pd.merge(info1, info2, left_index = True, right_index = True)
+    #Set index to 1 to 21
+    after_tax.set_index([list(range(11,22))], inplace = True)
+    #Difference in income columnn
+    after_tax = after_tax.assign(difference_income = after_tax.after_tax_income_x - after_tax.after_tax_income_y)
+    after_tax = after_tax.rename(columns = {'after_tax_income_x': 'income_scen1', 'after_tax_income_y': 'income_scen2'})
+    return after_tax[['income_scen1', 'income_scen2', 'difference_income']]
+
+
+#def last_10()
 
     
    
@@ -1013,4 +1035,7 @@ if __name__ == "__main__":
     df_returns2 = combine_csvs(df_client2_first10, df2_dist)
     df_returns2.to_csv('scenario2_totalreturns.csv')
     
+    #Get After Tax Income for two scenarios
+    after_tax = after_tax_compare(df1_info, df2_info)
+    after_tax.to_csv('scenarios_income.csv')
     
