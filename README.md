@@ -20,7 +20,6 @@ As the distributions calculations are more complex, here are the assumptions we 
 6) Hence: Dividends + Interest + Capital Gains to be Paid + Net Capital Sold = Distribution.
 7) Related, After Tax Income is assumed to be: Dividends + Interest + Net Capital Sold
 
-Note: Net Capital Sold has to be calculated from the DataFrame, like this: Distribution - Capital Gains to be Paid - Dividends - Interest (script can be altered to directly provide it).
 
 ## Running the Script
 
@@ -33,11 +32,19 @@ In that case, to get the information you want for a scenario, do the below when 
 0) Import the scenario classes:
 from va_scenariocalculator import scenario_one, scenario_two
 1) Create a client (if you want to toggle the initial amount, then do initial_amount = your_number):
-i.e. clientx = scenario_one()
+*     clientx = scenario_one()
+*     clienty = scenario_two()
 2) Call the total_returns() method:
-i.e. clientx.total_returns().
+*     clientx_first10 = clientx.total_returns().
+*     clienty_first10 = clienty.total_returns()
 3) Call the distributions method (recommend that you set a hypothesis distribution, like 750900 for scenario 1, and 1251000 for scenario 2, for faster results, which also is what you would do in Excel with Goal Seek):
-i.e. clientx.distributions()
+*     clientx_last10, clientx_info = clientx.distributions()
+*     clienty_last10, clienty_info = clienty.distributions()
+4) Run combine_csvs function to combine the DataFrame from the total_returns method and the first DataFrame from the distributions method, so that you see the assets compounding over the first 10 years, and then drawing down over the next 10.
+*     clientx_returns = combine_csvs(clientx_first10, clientx_last10)
+*     clienty_returns = combine_csvs(clienty_first10, clienty_last10)
+5) Run the after_tax_compare function after running both scenarios to get the After Tax Income for each year for both scenarios, and the difference between them.
+*     after_tax_compare(clientx_info, clienty_info)
 
 # Methods
 ## Total_returns()
@@ -49,6 +56,8 @@ This method returns a DataFrame of the portfolio investments from year 1 to 10.
 This returns two dataframes:
 1) A dataframe tracking the portfolio's muni and equity components over the 10 year distribution period.
 2) A dataframe showing the distribution per year (which includes the amount needed to pay capgains taxes), the proportion of the distribution that is principal from the muni or equity portfolio, and the capgains taxes paid that year.
+
+
 
 **After Tax Income each year will be the difference of distributions and capgains paid for that year.**
 
