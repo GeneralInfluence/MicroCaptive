@@ -32,19 +32,19 @@ In that case, to get the information you want for a scenario, do the below when 
 0) Import the scenario classes:
 from va_scenariocalculator import scenario_one, scenario_two
 1) Create a client (if you want to toggle the initial amount, then do initial_amount = your_number):
-i.e. clientx = scenario_one()
-     clienty = scenario_two()
+*     clientx = scenario_one()
+*     clienty = scenario_two()
 2) Call the total_returns() method:
-i.e. clientx_first10 = clientx.total_returns().
-     clienty_first10 = clienty.total_returns()
+*     clientx_first10 = clientx.total_returns().
+*     clienty_first10 = clienty.total_returns()
 3) Call the distributions method (recommend that you set a hypothesis distribution, like 750900 for scenario 1, and 1251000 for scenario 2, for faster results, which also is what you would do in Excel with Goal Seek):
-i.e. clientx_last10, clientx_info = clientx.distributions()
-     clienty_last10, clienty_info = clienty.distributions()
+*     clientx_last10, clientx_info = clientx.distributions()
+*     clienty_last10, clienty_info = clienty.distributions()
 4) Run combine_csvs function to combine the DataFrame from the total_returns method and the first DataFrame from the distributions method, so that you see the assets compounding over the first 10 years, and then drawing down over the next 10.
-i.e. clientx_returns = combine_csvs(clientx_first10, clientx_last10)
-     clienty_returns = combine_csvs(clienty_first10, clienty_last10)
+*     clientx_returns = combine_csvs(clientx_first10, clientx_last10)
+*     clienty_returns = combine_csvs(clienty_first10, clienty_last10)
 5) Run the after_tax_compare function after running both scenarios to get the After Tax Income for each year for both scenarios, and the difference between them.
-i.e. after_tax_compare(clientx_info, clienty_info)
+*     after_tax_compare(clientx_info, clienty_info)
 
 # Methods
 ## Total_returns()
