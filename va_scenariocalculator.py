@@ -995,6 +995,8 @@ def combine_csvs(df_first10, df_dists):
     
     #Set index to 1 to 21.
     df_combined.set_index([list(range(1,22))], inplace = True)
+    df_combined.index.rename('Starting Year', inplace = True)
+   
     return df_combined
 
 def after_tax_compare(info1, info2):
@@ -1005,9 +1007,11 @@ def after_tax_compare(info1, info2):
     #Set index to 1 to 21
     after_tax.set_index([list(range(11,22))], inplace = True)
     #Difference in income columnn
-    after_tax = after_tax.assign(difference_income = after_tax.after_tax_income_x - after_tax.after_tax_income_y)
+    after_tax = after_tax.assign(difference_income = after_tax.after_tax_income_y - after_tax.after_tax_income_x)
     after_tax = after_tax.rename(columns = {'after_tax_income_x': 'income_scen1', 'after_tax_income_y': 'income_scen2'})
-    return after_tax[['income_scen1', 'income_scen2', 'difference_income']]
+    after_tax = after_tax[['income_scen1', 'income_scen2', 'difference_income']]
+    after_tax.index.rename('Starting Year', inplace = True)
+    return after_tax
 
 
 #def last_10()
@@ -1023,8 +1027,9 @@ if __name__ == "__main__":
     df1_dist.to_csv('client1_dists.csv')
     df1_info.to_csv('scenario1_distributions.csv')
     df_returns = combine_csvs(df_client1_first10, df1_dist)
-    df_returns.to_csv('scenario1_totalreturns_all.csv')
-    df_returns['total_assets'].to_csv('scenario1_totalassets.csv')
+    df_returns.to_csv('scenario1_totalreturns_all.csv', index_label = 'Starting Year')
+    tot_assets = df_returns['total_assets']
+    tot_assets.to_csv('scenario1_totalassets.csv', index_label = 'Starting Year')
     
      #run scenario two
     client2 = scenario_two()
@@ -1034,11 +1039,12 @@ if __name__ == "__main__":
     df2_dist.to_csv('client2_dists.csv')
     df2_info.to_csv('scenario2_distributions.csv')
     df_returns2 = combine_csvs(df_client2_first10, df2_dist)
-    df_returns2.to_csv('scenario2_totalreturns_all.csv')
-    df_returns2['total_assets'].to_csv('scenario2_totalassets.csv')
+    df_returns2.to_csv('scenario2_totalreturns_all.csv', index_label = 'Starting Year')
+    tot_assets2 = df_returns2['total_assets']
+    tot_assets2.to_csv('scenario2_totalassets.csv', index_label = 'Starting Year')
     
     
     #Get After Tax Income for two scenarios
     after_tax = after_tax_compare(df1_info, df2_info)
-    after_tax.to_csv('scenarios_income.csv')
+    after_tax.to_csv('scenarios_income.csv', index_label = 'Starting Year')
     
